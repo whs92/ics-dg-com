@@ -1,0 +1,3 @@
+epicsEnvSet("IOC","iocics-dg-com")
+epicsEnvSet("TOP","/epics/iocs/vanilla/ics-dg-com")
+epicsEnvSet("EPICS_BASE","/epics/base")
