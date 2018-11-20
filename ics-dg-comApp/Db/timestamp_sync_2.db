@@ -1,0 +1,115 @@
+# ESS Detector group timestamp synchronisaton template
+# SYS    = The System (DG)
+# DEVICE = The Device name (ControlBox)
+# DEVICE1 = The Device name (FPGA1)
+# DEVICE2 = The Device name (FPGA2)
+# TS_EVNT  = The record that is processed when the event is received
+# PROTO = protocol file
+# COM1 e.g COM1
+# COM2 e.g COM2
+# UNIV_OUT_ENA = Record to enable output of EVR
+
+
+
+## -------------- Timestamp Synchronisation Records--------------------- ##
+
+#This record controls processing and allows for event codes to be ignored
+record(bi, "$(SYS)-$(DEVICE):syncTimestampSeq-ENA"){
+	field(DESC, "Enable timestamp sync")
+	field(VAL, "0")
+}
+
+
+# This record is processed on the reciept of the "TSEVT" defined in the st.cmd file
+# The EVR must include a fwd link to this record. 
+record (seq, "$(SYS)-$(DEVICE):syncTimestampSeq"){
+	field(DESC, "Perform timestamp sync")	
+	field(DOL1, "0")
+	field(LNK1, "$(SYS)-$(DEVICE):syncTimestampSeq-ENA"	
+	field(DOL2, "1")	
+	field(LNK2, "$(SYS)-$(DEVICE1):reset.PROC")
+	field(DOL3, "1")	
+	field(LNK3, "$(SYS)-$(DEVICE2):reset.PROC")
+	field(DOL4, "1")
+	field(LNK4, "$(SYS)-$(DEVICE1):enable.PROC")
+	field(DOL5, "1")
+	field(LNK5, "$(SYS)-$(DEVICE2):enable.PROC")
+	field(DOL6, "1")
+	field(LNK6, "$(SYS)-$(DEVICE):getTimeStamp_aSub.PROC")
+	field(DOL7, "1")
+	field(LNK7, "$(SYS)-$(DEVICE1):sendTimestamp.PROC")
+	field(DOL8, "1")
+	field(LNK8, "$(SYS)-$(DEVICE2):sendTimestamp.PROC")
+	field(DOL9, "1")
+	field(LNK9, "$(UNIV_OUT_ENA)") ############## need to connect to EVR 
+	field(DLY10, "1")	# Delay set assuming event 125 is used with 1Hz frequency	
+	field(DOL10, "0")
+	field(LNK10, "$(UNIV_OUT_ENA)") ############## need to connect to EVR 
+	field(DISV, "0")
+	field(SDIS, "$(SYS)-$(DEVICE):syncTimestampSeq-ENA")
+	
+}
+
+
+record(aSub, "$(SYS)-$(DEVICE):getTimeStamp_aSub"){
+	field(SNAM, "getTimeStamp_aSub")
+	field(FTA,  "LONG")     
+	field(NOA,  "1")  	
+	field(INPA, "$(TS_EVNT)")
+	field(FTB,  "LONG")
+	field(NOB,  "1")
+	field(INPB, "$(SYS)-$(DEVICE):fracSecDelta")
+	field(FTC,  "LONG")
+	field(NOC,  "1")
+	field(INPC, "$(SYS)-$(DEVICE):fracNsecDelta")
+	field(FTVA, "LONG")
+	field(NOVA, "1")
+	field(OUTA, "$(SYS)-$(DEVICE):TimeStampSec")
+	field(FTVB, "LONG")
+	field(NOVB, "1")
+	field(OUTB, "$(SYS)-$(DEVICE):TimeStampNsec")	
+}
+
+record(longin, "$(SYS)-$(DEVICE):fracSecDelta"){
+	field(DESC, "Timestamp delta value")
+	field(VAL, "1") #Note that this is in fractional nanoseconds and not seconds (it's multiples of the 88MHz Clock)
+}
+
+record(longin, "$(SYS)-$(DEVICE):fracNsecDelta"){
+	field(DESC, "Timestamp delta value")
+	field(VAL, "0") #Note that this is in fractional nanoseconds and not seconds (it's multiples of the 88MHz Clock)
+}
+
+record(longin, "$(SYS)-$(DEVICE):TimeStampSec") {
+  field(DESC, "Timestamp value upper 32 bits")
+  field(VAL, "0")
+}
+
+record(longin, "$(SYS)-$(DEVICE):TimeStampNsec") {
+  field(DESC, "Timestamp value lower 32 bits")
+  field(VAL, "0")
+}
+
+record(longin, "$(SYS)-$(DEVICE):DummyTimeStampSec") {
+  field(DESC, "Dummy Timestamp value upper 32 bits")
+  field(VAL, "1")
+}
+
+record(longin, "$(SYS)-$(DEVICE):DummyTimeStampNsec") {
+  field(DESC, "Dummy Timestamp value lower 32 bits")
+  field(VAL, "0")
+}
+
+record(bo, "$(SYS)-$(DEVICE1):sendTimestamp") {
+  field(DESC, "Send timestamp register packet to FPGA")
+  field(DTYP, "stream")	
+  field(OUT, "@$(PROTO) sendTimestamp($(SYS)-$(DEVICE),TimeStampSec,TimeStampNsec) $(COM1)")
+}
+
+record(bo, "$(SYS)-$(DEVICE2):sendTimestamp") {
+  field(DESC, "Send timestamp register packet to FPGA")
+  field(DTYP, "stream")	
+  field(OUT, "@$(PROTO) sendTimestamp($(SYS)-$(DEVICE),TimeStampSec,TimeStampNsec) $(COM2)")
+}
+
+
